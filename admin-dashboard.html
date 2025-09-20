@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Horsepower Electrical</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <style>
+        body {
+            background: #f8fafc;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .dashboard-header {
+            background: white;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .dashboard-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .dashboard-title h1 {
+            color: #1e293b;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .admin-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .admin-email {
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        .logout-btn {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: background 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: #b91c1c;
+        }
+
+        .dashboard-content {
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+        }
+
+        .stat-card h3 {
+            color: #64748b;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin: 0 0 0.5rem 0;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .stat-card .value {
+            color: #1e293b;
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .submissions-section {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+        }
+
+        .section-header {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-header h2 {
+            color: #1e293b;
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .refresh-btn {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: background 0.3s ease;
+        }
+
+        .refresh-btn:hover {
+            background: #1d4ed8;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        .submissions-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .submissions-table th {
+            background: #f8fafc;
+            color: #374151;
+            font-weight: 600;
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 0.875rem;
+        }
+
+        .submissions-table td {
+            padding: 1rem;
+            border-bottom: 1px solid #f1f5f9;
+            color: #374151;
+            font-size: 0.875rem;
+        }
+
+        .submissions-table tr:hover {
+            background: #f8fafc;
+        }
+
+        .service-badge {
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .status-new {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-read {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .no-submissions {
+            text-align: center;
+            padding: 3rem;
+            color: #64748b;
+        }
+
+        .no-submissions i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #cbd5e1;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #64748b;
+        }
+
+        .loading i {
+            font-size: 2rem;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-header {
+                padding: 1rem;
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+            }
+
+            .dashboard-content {
+                padding: 1rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .section-header {
+                padding: 1rem;
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+            }
+
+            .submissions-table {
+                font-size: 0.75rem;
+            }
+
+            .submissions-table th,
+            .submissions-table td {
+                padding: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-header">
+        <div class="dashboard-title">
+            <i class="fas fa-tachometer-alt" style="color: #2563eb;"></i>
+            <h1>Admin Dashboard</h1>
+        </div>
+        <div class="admin-info">
+            <span class="admin-email" id="adminEmail"></span>
+            <button class="logout-btn" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i>
+                Logout
+            </button>
+        </div>
+    </div>
+
+    <div class="dashboard-content">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Total Submissions</h3>
+                <p class="value" id="totalSubmissions">0</p>
+            </div>
+            <div class="stat-card">
+                <h3>New This Week</h3>
+                <p class="value" id="newThisWeek">0</p>
+            </div>
+            <div class="stat-card">
+                <h3>Most Requested Service</h3>
+                <p class="value" id="topService">-</p>
+            </div>
+        </div>
+
+        <div class="submissions-section">
+            <div class="section-header">
+                <h2>Contact Form Submissions</h2>
+                <button class="refresh-btn" onclick="loadSubmissions()">
+                    <i class="fas fa-sync-alt"></i>
+                    Refresh
+                </button>
+            </div>
+            <div class="table-container">
+                <div id="loadingIndicator" class="loading">
+                    <i class="fas fa-spinner"></i>
+                    <p>Loading submissions...</p>
+                </div>
+                <div id="noSubmissions" class="no-submissions" style="display: none;">
+                    <i class="fas fa-inbox"></i>
+                    <h3>No submissions yet</h3>
+                    <p>Contact form submissions will appear here</p>
+                </div>
+                <table class="submissions-table" id="submissionsTable" style="display: none;">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Service</th>
+                            <th>Message</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="submissionsBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check authentication
+        if (sessionStorage.getItem('adminLoggedIn') !== 'true') {
+            window.location.href = 'admin-login.html';
+        }
+
+        // Display admin email
+        document.getElementById('adminEmail').textContent = sessionStorage.getItem('adminEmail');
+
+        let submissions = [];
+
+        async function loadSubmissions() {
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const noSubmissions = document.getElementById('noSubmissions');
+            const submissionsTable = document.getElementById('submissionsTable');
+            const submissionsBody = document.getElementById('submissionsBody');
+
+            loadingIndicator.style.display = 'block';
+            noSubmissions.style.display = 'none';
+            submissionsTable.style.display = 'none';
+
+            try {
+                // Load submissions from Supabase
+                const result = await window.supabaseConfig.getContactSubmissions();
+                
+                loadingIndicator.style.display = 'none';
+
+                if (result.success && result.data.length > 0) {
+                    submissions = result.data;
+                    submissionsTable.style.display = 'table';
+                    renderSubmissions();
+                    updateStats();
+                } else {
+                    noSubmissions.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error loading submissions:', error);
+                loadingIndicator.style.display = 'none';
+                noSubmissions.style.display = 'block';
+                noSubmissions.innerHTML = `
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h3>Error loading submissions</h3>
+                    <p>Please check your Supabase configuration</p>
+                `;
+            }
+        }
+
+        function renderSubmissions() {
+            const submissionsBody = document.getElementById('submissionsBody');
+            submissionsBody.innerHTML = '';
+
+            submissions.forEach(submission => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${submission.name}</td>
+                    <td>${submission.email}</td>
+                    <td>${submission.phone}</td>
+                    <td><span class="service-badge">${submission.service}</span></td>
+                    <td>${submission.message.length > 50 ? submission.message.substring(0, 50) + '...' : submission.message}</td>
+                    <td>${new Date(submission.created_at).toLocaleDateString()}</td>
+                    <td><span class="status-badge status-${submission.status}">${submission.status}</span></td>
+                `;
+                submissionsBody.appendChild(row);
+            });
+        }
+
+        async function updateStats() {
+            try {
+                // Get stats from Supabase
+                const result = await window.supabaseConfig.getSubmissionStats();
+                
+                if (result.success) {
+                    document.getElementById('totalSubmissions').textContent = result.data.total;
+                    document.getElementById('newThisWeek').textContent = result.data.thisWeek;
+                    document.getElementById('topService').textContent = result.data.topService;
+                } else {
+                    // Fallback to local calculation
+                    document.getElementById('totalSubmissions').textContent = submissions.length;
+                    
+                    const oneWeekAgo = new Date();
+                    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+                    const newThisWeek = submissions.filter(s => new Date(s.created_at) >= oneWeekAgo).length;
+                    document.getElementById('newThisWeek').textContent = newThisWeek;
+
+                    const serviceCounts = {};
+                    submissions.forEach(s => {
+                        serviceCounts[s.service] = (serviceCounts[s.service] || 0) + 1;
+                    });
+                    const topService = Object.keys(serviceCounts).reduce((a, b) => 
+                        serviceCounts[a] > serviceCounts[b] ? a : b, 'None'
+                    );
+                    document.getElementById('topService').textContent = topService;
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+                // Fallback to local calculation
+                document.getElementById('totalSubmissions').textContent = submissions.length;
+                document.getElementById('newThisWeek').textContent = '0';
+                document.getElementById('topService').textContent = '-';
+            }
+        }
+
+        function logout() {
+            sessionStorage.removeItem('adminLoggedIn');
+            sessionStorage.removeItem('adminEmail');
+            window.location.href = 'admin-login.html';
+        }
+
+        // Load data on page load
+        document.addEventListener('DOMContentLoaded', loadSubmissions);
+    </script>
+</body>
+</html>
